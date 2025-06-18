@@ -53,7 +53,7 @@
   become: true
   ansible.builtin.service:
     name: elasticsearch
-    state: start
+    state: started
 
 - name: Install | Wait until Elasticsearch is available
   ansible.builtin.wait_for:

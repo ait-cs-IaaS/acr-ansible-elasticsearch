@@ -45,3 +45,20 @@
   loop: "{{ elasticsearch_users }}"
   loop_control:
     label: "{{ item.username }}"
+
+- name: Config | Set system user passwords
+  ansible.builtin.uri:
+    url: "https://localhost:9200/_security/user/{{ item.key }}/_password"
+    method: POST
+    user: "elastic"
+    password: "{{ elastic_initial_password }}"
+    force_basic_auth: true
+    body_format: json
+    headers:
+      Content-Type: "application/json"
+    body:
+      password: "{{ item.value | default('') }}"
+    validate_certs: false
+  loop: "{{ elasticsearch_system_users | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"

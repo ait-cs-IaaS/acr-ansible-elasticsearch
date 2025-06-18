@@ -15,13 +15,17 @@ elasticsearch_users: []
 #     password: password
 #     roles: []
 
-elasticsearch_system_users: []
+elasticsearch_ingest_users: []
+
+# elasticsearch_ingest_users: 
+#   - username: beats
+#     password: password
+#     roles: ["beat_writers"]
+
+elasticsearch_system_users: {}
 
 # elasticsearch_system_users:
-#   - username: beats
-#     password: A7spAumKNX4Z
-#     roles: 
-#       - beat_writers
+#   kibana_system: A7spAumKNX4Z
 
 elasticsearch_roles: {}
 

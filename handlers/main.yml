@@ -1,0 +1,12 @@
+---
+
+- name: Restart elasticsearch
+  become: true
+  ansible.builtin.service:
+    name: elasticsearch
+    state: restarted
+
+- name: Reload systemd
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true

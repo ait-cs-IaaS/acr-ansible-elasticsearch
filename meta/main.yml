@@ -1,0 +1,11 @@
+galaxy_info:
+  author: Lenhard Reuter
+  description: This role installs and configures elasticsearch
+  company: AIT Austrian Institute of Technology
+  role_name: elasticsearch
+
+  license: GPL-3.0
+
+  min_ansible_version: 2.10
+
+  galaxy_tags: [elk, elasticsearch]

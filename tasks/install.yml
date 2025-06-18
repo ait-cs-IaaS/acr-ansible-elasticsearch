@@ -1,0 +1,39 @@
+---
+
+- name: Install | Get elasticsearch.deb
+  ansible.builtin.uri:
+    url: https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{ elastic_stack_version }}-amd64.deb
+    dest: /tmp/elasticsearch-{{ elastic_stack_version }}.deb
+    creates: /tmp/elasticsearch-{{ elastic_stack_version }}.deb
+
+- name: Install | Install Elasticsearch
+  become: true
+  ansible.builtin.apt:
+    deb: /tmp/elasticsearch-{{ elastic_stack_version }}.deb
+
+- name: Set initial elastic user password
+  ansible.builtin.shell: |
+    { echo "{{ elastic_initial_password }}"; echo "{{ elastic_initial_password }}"; } | /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic -i -b
+  register: reset_password
+  changed_when: "'successfully reset' in reset_password.stdout"
+
+- name: Install | Copy elasticsearch certificates
+  become: true
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/etc/elasticsearch/certs/{{ item | basename }}"
+    mode: "0600"
+    owner: elasticsearch
+    group: elasticsearch
+  with_items:
+    - "{{ elasticsearch_xpack_http_ssl_ca }}"
+    - "{{ elasticsearch_xpack_http_ssl_cert }}"
+    - "{{ elasticsearch_xpack_http_ssl_key }}"
+  when: item is defined
+
+- name: Install | Start and enable elasticsearch
+  become: true
+  ansible.builtin.service:
+    name: elasticsearch
+    state: restarted
+    enabled: true

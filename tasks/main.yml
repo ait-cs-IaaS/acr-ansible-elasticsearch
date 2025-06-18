@@ -1,0 +1,10 @@
+---
+
+- ansible.builtin.include_tasks: 
+    file: "install.yml"
+
+- ansible.builtin.include_tasks: 
+    file: "optimize_system.yml"
+
+- ansible.builtin.include_tasks: 
+    file: "config.yml"

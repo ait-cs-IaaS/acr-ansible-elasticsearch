@@ -1,0 +1,36 @@
+---
+# ELK vars
+elastic_stack_version: 9.0.0
+elastic_initial_password: Mozart.R0cks!
+
+## xpack security settings
+elasticsearch_xpack_ssl_ca: /path/to/local/ca.crt
+elasticsearch_xpack_ssl_cert: /path/to/local/elasticsearch.crt
+elasticsearch_xpack_ssl_key: /path/to/local/elasticsearch.key
+elasticsearch_xpack_http_ssl_ca: /path/to/local/ca.crt
+elasticsearch_xpack_http_ssl_cert: /path/to/local/elasticsearch.crt
+elasticsearch_xpack_http_ssl_key: /path/to/local/elasticsearch.key
+
+elasticsearch_users: []
+
+# elasticsearch_users:
+#   - username: name
+#     password: password
+#     roles: []
+
+elasticsearch_system_users: []
+
+# elasticsearch_system_users:
+#   - username: beats
+#     password: A7spAumKNX4Z
+#     roles: 
+#       - beat_writers
+
+elasticsearch_roles: {}
+
+# elasticsearch_roles:
+#   beat_writers:
+#     cluster: [monitor, manage_index_templates, manage_ilm, manage_ingest_pipelines]
+#     indices:
+#       - names: [filebeat-*, metricbeat-*, auditbeat-*]
+#         privileges: [read, write, create_index, create_doc, view_index_metadata, manage]

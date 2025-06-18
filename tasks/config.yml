@@ -1,0 +1,47 @@
+---
+
+- name: Config | Write config
+  become: true
+  ansible.builtin.template:
+    src: elasticsearch.yml.j2
+    dest: /etc/elasticsearch/elasticsearch.yml
+    mode: "0660"
+    owner: root
+    group: elasticsearch
+  notify: Restart elasticsearch
+
+- name: Config | Create roles
+  ansible.builtin.uri:
+    url: "https://localhost:9200/_security/role/{{ item.key }}"
+    method: PUT
+    user: "elastic"
+    password: "{{ elastic_initial_password }}"
+    force_basic_auth: true
+    body_format: json
+    headers:
+      Content-Type: "application/json"
+    body:
+      cluster: "{{ item.value.cluster | default([]) }}"
+      indices: "{{ item.value.indices | default([]) }}"
+    validate_certs: false
+  loop: "{{ elasticsearch_roles | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Config | Create users
+  ansible.builtin.uri:
+    url: "https://localhost:9200/_security/user/{{ item.username }}"
+    method: POST
+    user: "elastic"
+    password: "{{ elastic_initial_password }}"
+    force_basic_auth: true
+    body_format: json
+    headers:
+      Content-Type: "application/json"
+    body:
+      password: "{{ item.password | default('') }}"
+      roles: "{{ item.roles | default([]) }}"
+    validate_certs: false
+  loop: "{{ elasticsearch_users }}"
+  loop_control:
+    label: "{{ item.username }}"

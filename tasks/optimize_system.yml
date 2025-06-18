@@ -1,0 +1,86 @@
+---
+
+- name: Optimize | Create override directory for elasticsearch systemd unit
+  become: true
+  ansible.builtin.file:
+    path: /etc/systemd/system/elasticsearch.service.d
+    state: directory
+    mode: '0755'
+
+- name: Optimize | Set systemd limits for Elasticsearch
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/elasticsearch.service.d/override.conf
+    content: |
+      [Service]
+      LimitMEMLOCK=infinity
+    mode: '0644'
+  notify:
+    - Reload systemd
+    - Restart elasticsearch
+
+- name: Optimize | Ensure memlock is allowed in /etc/security/limits.d
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/security/limits.d/elasticsearch.conf
+    content: |
+      elasticsearch soft memlock unlimited
+      elasticsearch hard memlock unlimited
+    mode: '0644'
+
+- name: Optimize | Disable swap (temporary, for current session)
+  become: true
+  ansible.builtin.command: swapoff -a
+
+- name: Optimize | Remove swap entry from /etc/fstab
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: '^\s*[^#]\S+\s+swap\s+'
+    state: absent
+
+- name: Optimize | Ensure vm.max_map_count is set for Elasticsearch
+  become: true
+  ansible.builtin.sysctl:
+    name: vm.max_map_count
+    value: '262144'
+    sysctl_set: true
+    state: present
+    reload: true
+
+- name: Optimize | Get total memory in MB
+  become: true
+  ansible.builtin.shell: "awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo"
+  register: total_memory_mb
+  changed_when: false
+
+- name: Optimize | Set heap size to half of total memory
+  set_fact:
+    es_heap_size: "{{ (total_memory_mb.stdout | int / 2) | int }}"
+
+- name: Optimize | Configure JVM heap size
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/elasticsearch/jvm.options.d/heap.options
+    create: true
+    line: "-Xms{{ es_heap_size }}m"
+    regexp: '^(-Xms|#?-Xms)'
+  notify: Restart elasticsearch
+
+- name: Optimize | Configure JVM max heap size
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/elasticsearch/jvm.options.d/heap.options
+    create: true
+    line: "-Xmx{{ es_heap_size }}m"
+    regexp: '^(-Xmx|#?-Xmx)'
+  notify: Restart elasticsearch
+
+- name: Optimize | Ensure Elasticsearch user can create at least 4096 threads
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/security/limits.d/elasticsearch-nproc.conf
+    content: |
+      elasticsearch soft nproc 4096
+      elasticsearch hard nproc 4096
+    mode: '0644'

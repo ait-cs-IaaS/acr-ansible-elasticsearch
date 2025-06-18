@@ -15,7 +15,7 @@
     url: "https://localhost:9200/_security/role/{{ item.key }}"
     method: PUT
     user: "elastic"
-    password: "{{ elastic_initial_password }}"
+    password: "{{ elasticsearch_initial_password }}"
     force_basic_auth: true
     body_format: json
     headers:
@@ -33,7 +33,7 @@
     url: "https://localhost:9200/_security/user/{{ item.username }}"
     method: POST
     user: "elastic"
-    password: "{{ elastic_initial_password }}"
+    password: "{{ elasticsearch_initial_password }}"
     force_basic_auth: true
     body_format: json
     headers:
@@ -51,7 +51,7 @@
     url: "https://localhost:9200/_security/user/{{ item.key }}/_password"
     method: POST
     user: "elastic"
-    password: "{{ elastic_initial_password }}"
+    password: "{{ elasticsearch_initial_password }}"
     force_basic_auth: true
     body_format: json
     headers:

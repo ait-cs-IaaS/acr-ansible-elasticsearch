@@ -1,19 +1,53 @@
 ---
 
-- name: Install | Get elasticsearch.deb
-  ansible.builtin.uri:
-    url: https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{ elastic_stack_version }}-amd64.deb
-    dest: /tmp/elasticsearch-{{ elastic_stack_version }}.deb
-    creates: /tmp/elasticsearch-{{ elastic_stack_version }}.deb
+
+- name: Install | Download Elasticsearch SHA512 checksum
+  ansible.builtin.get_url:
+    url: "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{ elasticsearch_stack_version }}-amd64.deb.sha512"
+    dest: "/tmp/elasticsearch-{{ elasticsearch_stack_version }}.deb.sha512"
+    mode: '0644'
+
+- name: Install | Read SHA512 checksum value
+  ansible.builtin.slurp:
+    src: "/tmp/elasticsearch-{{ elasticsearch_stack_version }}.deb.sha512"
+  register: elasticsearch_sha512_file
+
+- name: Install | Extract checksum string from file
+  set_fact:
+    elasticsearch_checksum: "{{ (elasticsearch_sha512_file.content | b64decode).split()[0] }}"
+
+- name: Install | Check if Elasticsearch .deb exists and is valid
+  shell: "sha512sum /tmp/elasticsearch-{{ elasticsearch_stack_version }}.deb | awk '{print $1}'"
+  register: local_elasticsearch_checksum
+  failed_when: false
+  changed_when: false
+
+- name: Install | Set download_needed flag
+  set_fact:
+    download_elasticsearch: "{{ (local_elasticsearch_checksum.stdout | default('')) != elasticsearch_checksum }}"
+
+- name: Install | Remove invalid elasticsearch .deb file
+  file:
+    path: "/tmp/elasticsearch-{{ elasticsearch_stack_version }}.deb"
+    state: absent
+  when: download_elasticsearch
+
+- name: Install | Download Elasticsearch .deb if missing or invalid
+  get_url:
+    url: "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{ elasticsearch_stack_version }}-amd64.deb"
+    dest: "/tmp/elasticsearch-{{ elasticsearch_stack_version }}.deb"
+    checksum: "sha512:{{ elasticsearch_checksum }}"
+    mode: '0644'
+  when: download_elasticsearch
 
 - name: Install | Install Elasticsearch
   become: true
   ansible.builtin.apt:
-    deb: /tmp/elasticsearch-{{ elastic_stack_version }}.deb
+    deb: /tmp/elasticsearch-{{ elasticsearch_stack_version }}.deb
 
 - name: Set initial elastic user password
   ansible.builtin.shell: |
-    { echo "{{ elastic_initial_password }}"; echo "{{ elastic_initial_password }}"; } | /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic -i -b
+    { echo "{{ elasticsearch_initial_password }}"; echo "{{ elasticsearch_initial_password }}"; } | /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic -i -b
   register: reset_password
   changed_when: "'successfully reset' in reset_password.stdout"
 

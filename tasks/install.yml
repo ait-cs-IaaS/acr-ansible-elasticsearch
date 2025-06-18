@@ -32,6 +32,10 @@
     state: absent
   when: download_elasticsearch
 
+- ansible.builtin.debug:
+    msg: "Downloading Elasticsearch ... [be patient]"
+  when: download_elasticsearch
+
 - name: Install | Download Elasticsearch .deb if missing or invalid
   get_url:
     url: "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{ elasticsearch_stack_version }}-amd64.deb"
@@ -45,7 +49,20 @@
   ansible.builtin.apt:
     deb: /tmp/elasticsearch-{{ elasticsearch_stack_version }}.deb
 
-- name: Set initial elastic user password
+- name: Install | Start elasticsearch
+  become: true
+  ansible.builtin.service:
+    name: elasticsearch
+    state: start
+
+- name: Install | Wait until Elasticsearch is available
+  ansible.builtin.wait_for:
+    host: "127.0.0.1"
+    port: 9200
+    timeout: 300
+    state: started
+
+- name: Install | Set initial elastic user password
   ansible.builtin.shell: |
     { echo "{{ elasticsearch_initial_password }}"; echo "{{ elasticsearch_initial_password }}"; } | /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic -i -b
   register: reset_password
@@ -64,10 +81,3 @@
     - "{{ elasticsearch_xpack_http_ssl_cert }}"
     - "{{ elasticsearch_xpack_http_ssl_key }}"
   when: item is defined
-
-- name: Install | Start and enable elasticsearch
-  become: true
-  ansible.builtin.service:
-    name: elasticsearch
-    state: restarted
-    enabled: true

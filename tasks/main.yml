@@ -8,3 +8,11 @@
 
 - ansible.builtin.include_tasks: 
     file: "config.yml"
+
+- name: Restart and enable elasticsearch
+  become: true
+  ansible.builtin.systemd:
+    name: elasticsearch
+    state: restarted
+    enabled: true
+    daemon_reload: true
